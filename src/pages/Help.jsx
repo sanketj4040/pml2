@@ -1,156 +1,248 @@
-import React from "react";
+import React, { useState } from "react";
+import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { createSupportRequest } from "../services/supportService";
 
 function Help() {
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    subject: "",
+    description: ""
+  });
+
+  // Error state
+  const [errors, setErrors] = useState({});
+  
+  // Success message state
+  const [successMessage, setSuccessMessage] = useState("");
+  
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Clear error for this field when user types
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ""
+      });
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email format";
+    }
+    
+    // Mobile validation
+    if (!formData.mobile.trim()) {
+      newErrors.mobile = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(formData.mobile.replace(/\D/g, ''))) {
+      newErrors.mobile = "Mobile number must be 10 digits";
+    }
+    
+    // Subject validation
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Subject is required";
+    }
+    
+    // Description validation
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required";
+    } else if (formData.description.trim().length < 10) {
+      newErrors.description = "Description must be at least 10 characters";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      setIsSubmitting(true);
+      
+      try {
+        // Call the service function to create a support request
+        await createSupportRequest(formData);
+        
+        // Show success message
+        setSuccessMessage("Your support request has been submitted successfully!");
+        
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          mobile: "",
+          subject: "",
+          description: ""
+        });
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 5000);
+      } catch (error) {
+        console.error("Error submitting support request:", error);
+        setErrors({ 
+          submit: "Failed to submit support request. Please try again." 
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      console.log("Form has errors");
+    }
+  };
+
   return (
     <>
-      <div className="header">
-        <img src="/images/logo.png" alt="Logo" className="logo" />
-        <div className="header-text">
-          <h1>Help Center</h1>
-          <p>Get assistance with your project management</p>
-        </div>
-        <nav className="main-nav">
-          <ul className="nav-links">
-            <li><a href="/" className="nav-link">Home</a></li>
-            <li><a href="/services" className="nav-link">Services</a></li>
-            <li><a href="/help" className="nav-link active">Help</a></li>
-          </ul>
-        </nav>
-      </div>
-      
-      <div className="help-container">
-        <div className="help-section">
-          <h2>User Guides</h2>
-          
-          <div className="guide-categories">
-            <div className="guide-category">
-              <h3>For Administrators</h3>
-              <ul className="guide-list">
-                <li>
-                  <span className="guide-icon">📊</span>
-                  <a href="#admin-dashboard">Dashboard Overview</a>
-                </li>
-                <li>
-                  <span className="guide-icon">👥</span>
-                  <a href="#admin-users">Managing Users</a>
-                </li>
-                <li>
-                  <span className="guide-icon">📁</span>
-                  <a href="#admin-projects">Project Administration</a>
-                </li>
-                <li>
-                  <span className="guide-icon">📈</span>
-                  <a href="#admin-reports">Generating Reports</a>
-                </li>
-              </ul>
-            </div>
+      <Header />
+      <main style={{paddingTop: '100px', paddingBottom: '20px', minHeight: 'calc(100vh - 150px)'}}>
+        <div className="help-container" style={{ maxWidth: '800px', margin: '0 auto', padding: '0 20px' }}>
+          <div className="help-section">
+            <h2 style={{ textAlign: 'center', marginBottom: '30px', fontSize: '1.8rem' }}>Contact Support</h2>
+            <p style={{ textAlign: 'center', marginBottom: '20px' }}>Please fill out the form below to get in touch with our support team:</p>
             
-            <div className="guide-category">
-              <h3>For Managers</h3>
-              <ul className="guide-list">
-                <li>
-                  <span className="guide-icon">✏️</span>
-                  <a href="#manager-create">Creating Projects</a>
-                </li>
-                <li>
-                  <span className="guide-icon">👤</span>
-                  <a href="#manager-assign">Assigning Team Members</a>
-                </li>
-                <li>
-                  <span className="guide-icon">📋</span>
-                  <a href="#manager-track">Tracking Progress</a>
-                </li>
-                <li>
-                  <span className="guide-icon">⏱️</span>
-                  <a href="#manager-deadlines">Managing Deadlines</a>
-                </li>
-              </ul>
-            </div>
+            {successMessage && (
+              <div className="success-message" style={{
+                backgroundColor: '#dcfce7',
+                color: '#166534',
+                padding: '12px 16px',
+                borderRadius: '6px',
+                marginBottom: '20px',
+                fontWeight: '500'
+              }}>
+                {successMessage}
+              </div>
+            )}
             
-            <div className="guide-category">
-              <h3>For Team Members</h3>
-              <ul className="guide-list">
-                <li>
-                  <span className="guide-icon">🔍</span>
-                  <a href="#team-view">Viewing Assigned Projects</a>
-                </li>
-                <li>
-                  <span className="guide-icon">✅</span>
-                  <a href="#team-update">Updating Task Status</a>
-                </li>
-                <li>
-                  <span className="guide-icon">💬</span>
-                  <a href="#team-communicate">Communicating with Team</a>
-                </li>
-                <li>
-                  <span className="guide-icon">⏰</span>
-                  <a href="#team-time">Time Tracking</a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="help-tips">
-            <h3>Quick Tips</h3>
-            <div className="tips-container">
-              <div className="tip-card">
-                <div className="tip-icon">💡</div>
-                <div className="tip-content">
-                  <h4>Use Search</h4>
-                  <p>The search bar at the top of the page can help you quickly find projects, tasks, or team members.</p>
-                </div>
+            <form className="contact-form" onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="name">Full Name</label>
+                <input 
+                  type="text" 
+                  id="name" 
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name" 
+                  className={`border rounded px-3 py-2 w-full ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                {errors.name && <p className="error-text" style={{color: '#dc2626', fontSize: '0.85em', marginTop: '4px'}}>{errors.name}</p>}
               </div>
               
-              <div className="tip-card">
-                <div className="tip-icon">🔄</div>
-                <div className="tip-content">
-                  <h4>Regular Updates</h4>
-                  <p>Update your project progress regularly to keep everyone informed of the current status.</p>
-                </div>
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <input 
+                  type="email" 
+                  id="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter your email address" 
+                  className={`border rounded px-3 py-2 w-full ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                {errors.email && <p className="error-text" style={{color: '#dc2626', fontSize: '0.85em', marginTop: '4px'}}>{errors.email}</p>}
               </div>
               
-              <div className="tip-card">
-                <div className="tip-icon">🔔</div>
-                <div className="tip-content">
-                  <h4>Notifications</h4>
-                  <p>Enable browser notifications to stay updated on project changes and upcoming deadlines.</p>
-                </div>
+              <div className="form-group">
+                <label htmlFor="mobile">Mobile Number</label>
+                <input 
+                  type="tel" 
+                  id="mobile" 
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  placeholder="Enter your mobile number" 
+                  className={`border rounded px-3 py-2 w-full ${errors.mobile ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                {errors.mobile && <p className="error-text" style={{color: '#dc2626', fontSize: '0.85em', marginTop: '4px'}}>{errors.mobile}</p>}
               </div>
-            </div>
+              
+              <div className="form-group">
+                <label htmlFor="subject">Subject</label>
+                <input 
+                  type="text" 
+                  id="subject" 
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  placeholder="Enter the subject of your inquiry" 
+                  className={`border rounded px-3 py-2 w-full ${errors.subject ? 'border-red-500' : 'border-gray-300'}`}
+                />
+                {errors.subject && <p className="error-text" style={{color: '#dc2626', fontSize: '0.85em', marginTop: '4px'}}>{errors.subject}</p>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <textarea 
+                  id="description" 
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Describe your issue or question in detail" 
+                  rows="5"
+                  className={`border rounded px-3 py-2 w-full ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                ></textarea>
+                {errors.description && <p className="error-text" style={{color: '#dc2626', fontSize: '0.85em', marginTop: '4px'}}>{errors.description}</p>}
+              </div>
+              
+              <button 
+                type="submit" 
+                className="submit-button" 
+                disabled={isSubmitting}
+                style={{
+                  backgroundColor: isSubmitting ? '#93c5fd' : '#2563eb', 
+                  color: 'white', 
+                  padding: '12px 24px', 
+                  borderRadius: '6px', 
+                  fontWeight: 'bold', 
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  width: '100%',
+                  marginTop: '10px'
+                }}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Support Request'}
+              </button>
+              
+              {errors.submit && (
+                <p className="error-text" style={{
+                  color: '#dc2626', 
+                  fontSize: '0.9em', 
+                  marginTop: '10px',
+                  textAlign: 'center'
+                }}>
+                  {errors.submit}
+                </p>
+              )}
+            </form>
           </div>
         </div>
-        
-        <div className="help-section">
-          <h2>Contact Support</h2>
-          <p>Need more help? Contact our support team:</p>
-          
-          <form className="contact-form">
-            <div className="form-group">
-              <label>Name</label>
-              <input type="text" placeholder="Your name" />
-            </div>
-            
-            <div className="form-group">
-              <label>Email</label>
-              <input type="email" placeholder="Your email address" />
-            </div>
-            
-            <div className="form-group">
-              <label>Subject</label>
-              <input type="text" placeholder="What is this regarding?" />
-            </div>
-            
-            <div className="form-group">
-              <label>Message</label>
-              <textarea rows="5" placeholder="Describe your issue or question"></textarea>
-            </div>
-            
-            <button type="submit" className="submit-button">Send Message</button>
-          </form>
-        </div>
-      </div>
-      
+      </main>
       <Footer />
     </>
   );

@@ -39,10 +39,10 @@ function ManagerLogin() {
         <button type="submit">Login</button>
         <div className="login-error">{error}</div>
         <div className="login-link">
-          Not registered yet? <Link to="/manager-register">Register now</Link>
-        </div>
-        <div className="login-link" style={{ marginTop: "10px" }}>
-          Not a manager? <Link to="/">Go to Home</Link>
+          <div className="registration-note">
+            Please contact the administrator for registration.
+          </div>
+          <Link to="/">Go to Home</Link>
         </div>
       </form>
     </div>

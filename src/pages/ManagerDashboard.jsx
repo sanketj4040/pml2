@@ -5,6 +5,20 @@ function ManagerDashboard() {
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [showForm, setShowForm] = useState(false);
+  const [managers, setManagers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    deadline: "",
+    technologies: "",
+    priority: "5",
+    teamMembers: [],
+    progress: "0"
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,9 +84,50 @@ function ManagerDashboard() {
       }
     ];
     
+    // Sample team members data
+    const sampleTeamMembers = [
+      { id: 1, name: "John Smith", skill: "Frontend Developer" },
+      { id: 2, name: "Lisa Wong", skill: "Backend Developer" },
+      { id: 3, name: "Mark Thompson", skill: "UI/UX Designer" },
+      { id: 4, name: "Anita Kumar", skill: "Database Administrator" },
+      { id: 5, name: "Carlos Rodriguez", skill: "QA Engineer" },
+      { id: 6, name: "Emma Davis", skill: "Project Manager" },
+      { id: 7, name: "Tomas Lee", skill: "DevOps Engineer" },
+      { id: 8, name: "Sophie Martin", skill: "Business Analyst" }
+    ];
+    
     setProjects(sampleProjects);
     setTasks(sampleTasks);
+    setTeamMembers(sampleTeamMembers);
   }, [navigate]);
+
+  // Initialize empty form with today's date when form is shown
+  useEffect(() => {
+    if (showForm) {
+      setFormData(prevData => ({
+        ...prevData,
+        deadline: prevData.deadline || new Date().toISOString().split("T")[0]
+      }));
+    }
+  }, [showForm]);
+  
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  const handleTeamMemberToggle = (memberId) => {
+    setSelectedTeamMembers(prev => {
+      if (prev.includes(memberId)) {
+        return prev.filter(id => id !== memberId);
+      } else {
+        return [...prev, memberId];
+      }
+    });
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("managerLoggedIn");
@@ -83,6 +138,81 @@ function ManagerDashboard() {
     setTasks(tasks.map(task => 
       task.id === taskId ? { ...task, status: newStatus } : task
     ));
+  };
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError("");
+
+    // Validation
+    if (!formData.title || !formData.description || !formData.deadline) {
+      setError("Please fill all required fields!");
+      return;
+    }
+
+    if (selectedTeamMembers.length === 0) {
+      setError("Please select at least one team member!");
+      return;
+    }
+
+    // Fix for deadline validation
+    // Get today's date at the beginning of the day (midnight) to properly compare with selected date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const selectedDate = new Date(formData.deadline);
+    // Set to beginning of the day for accurate comparison
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate < today) {
+      setError("Deadline must be today or a future date");
+      return;
+    }
+    
+    // Get selected team members details
+    const selectedTeamMembersDetails = teamMembers.filter(member => 
+      selectedTeamMembers.includes(member.id)
+    ).map(member => ({
+      id: member.id,
+      name: member.name,
+      skill: member.skill
+    }));
+
+    // Add new project
+    const newProject = {
+      id: projects.length + 1,
+      title: formData.title,
+      description: formData.description,
+      deadline: formData.deadline,
+      progress: parseInt(formData.progress) || 0,
+      technologies: formData.technologies.split(",").map(t => t.trim()).filter(t => t),
+      priority: getPriorityLabel(parseInt(formData.priority)),
+      priorityValue: parseInt(formData.priority),
+      team: selectedTeamMembersDetails.map(member => member.name),
+      status: "Not Started",
+      createdAt: new Date().toISOString()
+    };
+
+    setProjects([...projects, newProject]);
+    setShowForm(false);
+    setFormData({
+      title: "",
+      description: "",
+      deadline: "",
+      technologies: "",
+      priority: "5",
+      teamMembers: [],
+      progress: "0"
+    });
+    setSelectedTeamMembers([]);
+  };
+
+  // Helper function to convert numeric priority to label
+  const getPriorityLabel = (priorityValue) => {
+    if (priorityValue >= 8) return "Critical";
+    if (priorityValue >= 5) return "High";
+    if (priorityValue >= 3) return "Medium";
+    return "Low";
   };
 
   return (
@@ -162,7 +292,6 @@ function ManagerDashboard() {
               <div className="action-section">
                 <h4>Quick Actions</h4>
                 <div className="action-buttons">
-                  <button className="action-btn">Create New Project</button>
                   <button className="action-btn">Assign Tasks</button>
                   <button className="action-btn">View Team Performance</button>
                   <button className="action-btn">Generate Reports</button>
@@ -186,10 +315,130 @@ function ManagerDashboard() {
               <p>Manage your projects, track progress, and allocate resources effectively.</p>
               
               <div className="action-buttons project-actions">
-                <button className="action-btn primary">+ New Project</button>
+                <button 
+                  className={`action-btn primary ${showForm ? 'cancel' : ''}`} 
+                  onClick={() => setShowForm(!showForm)}
+                >
+                  {showForm ? '✖ Cancel' : '+ New Project'}
+                </button>
                 <button className="action-btn">View All Projects</button>
                 <button className="action-btn">Project Analytics</button>
               </div>
+              
+              {showForm && (
+                <div className="form-container" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <h3>Create New Project</h3>
+                  {error && <div className="error-message" style={{ color: '#dc2626', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px', marginBottom: '15px' }}>{error}</div>}
+                  <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                      <label>Project Title*</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        placeholder="Enter project title"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Description*</label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows="3"
+                        placeholder="Enter project description"
+                      ></textarea>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Deadline*</label>
+                        <input
+                          type="date"
+                          name="deadline"
+                          value={formData.deadline}
+                          onChange={handleInputChange}
+                          min={new Date().toISOString().split("T")[0]}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Technologies Required (comma-separated)*</label>
+                      <input
+                        type="text"
+                        name="technologies"
+                        value={formData.technologies}
+                        onChange={handleInputChange}
+                        placeholder="React, Node.js, MongoDB, etc."
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Priority (1-10)*: {formData.priority}</label>
+                      <input
+                        type="range"
+                        name="priority"
+                        min="1"
+                        max="10"
+                        value={formData.priority}
+                        onChange={handleInputChange}
+                        className="priority-slider"
+                      />
+                      <div className="priority-labels">
+                        <span>Low</span>
+                        <span>Medium</span>
+                        <span>High</span>
+                        <span>Critical</span>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Initial Progress (%)</label>
+                      <input
+                        type="number"
+                        name="progress"
+                        min="0"
+                        max="100"
+                        value={formData.progress}
+                        onChange={handleInputChange}
+                        placeholder="0-100"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Select Team Members*</label>
+                      <div className="team-member-selection" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '4px', padding: '10px' }}>
+                        {teamMembers.map(member => (
+                          <div 
+                            key={member.id} 
+                            className={`team-member-option ${selectedTeamMembers.includes(member.id) ? 'selected' : ''}`}
+                            onClick={() => handleTeamMemberToggle(member.id)}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              padding: '8px', 
+                              margin: '5px 0', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer',
+                              backgroundColor: selectedTeamMembers.includes(member.id) ? '#e0f2fe' : 'white',
+                              border: selectedTeamMembers.includes(member.id) ? '1px solid #bae6fd' : '1px solid #e5e7eb'
+                            }}
+                          >
+                            <div className="member-avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px' }}>
+                              {member.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div className="member-details" style={{ flex: '1' }}>
+                              <span className="member-name" style={{ display: 'block', fontWeight: '500' }}>{member.name}</span>
+                              <span className="member-skill" style={{ display: 'block', fontSize: '0.875rem', color: '#6b7280' }}>{member.skill}</span>
+                            </div>
+                            <div className="member-checkbox" style={{ width: '24px', height: '24px', borderRadius: '4px', border: selectedTeamMembers.includes(member.id) ? 'none' : '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedTeamMembers.includes(member.id) ? '#2563eb' : 'transparent' }}>
+                              {selectedTeamMembers.includes(member.id) && <span style={{ color: 'white' }}>✓</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="submit" className="submit-button" style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '4px', border: 'none', cursor: 'pointer', marginTop: '15px', fontWeight: '500' }}>Create Project</button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         )}
