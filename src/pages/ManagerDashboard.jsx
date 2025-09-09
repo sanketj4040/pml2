@@ -7,7 +7,6 @@ function ManagerDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [managers, setManagers] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
   const [error, setError] = useState("");
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskFormData, setTaskFormData] = useState({
@@ -17,13 +16,10 @@ function ManagerDashboard() {
     managerId: ""
   });
   const [formData, setFormData] = useState({
+    projectId: "",
     title: "",
     description: "",
-    deadline: "",
-    technologies: "",
-    priority: "5",
-    teamMembers: [],
-    progress: "0"
+    teamMember: ""
   });
   const navigate = useNavigate();
 
@@ -54,47 +50,20 @@ function ManagerDashboard() {
       }
     ];
     
-    // Sample team members data
-    const sampleTeamMembers = [
-      { id: 1, name: "John Smith", skill: "Frontend Developer" },
-      { id: 2, name: "Lisa Wong", skill: "Backend Developer" },
-      { id: 3, name: "Mark Thompson", skill: "UI/UX Designer" },
-      { id: 4, name: "Anita Kumar", skill: "Database Administrator" },
-      { id: 5, name: "Carlos Rodriguez", skill: "QA Engineer" },
-      { id: 6, name: "Emma Davis", skill: "Project Manager" },
-      { id: 7, name: "Tomas Lee", skill: "DevOps Engineer" },
-      { id: 8, name: "Sophie Martin", skill: "Business Analyst" }
-    ];
+    // Sample team members data - removed dummy data
+    const sampleTeamMembers = [];
     
     setProjects(sampleProjects);
     setTeamMembers(sampleTeamMembers);
   }, [navigate]);
 
   // Initialize empty form with today's date when form is shown
-  useEffect(() => {
-    if (showForm) {
-      setFormData(prevData => ({
-        ...prevData,
-        deadline: prevData.deadline || new Date().toISOString().split("T")[0]
-      }));
-    }
-  }, [showForm]);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value
-    });
-  };
-
-  const handleTeamMemberToggle = (memberId) => {
-    setSelectedTeamMembers(prev => {
-      if (prev.includes(memberId)) {
-        return prev.filter(id => id !== memberId);
-      } else {
-        return [...prev, memberId];
-      }
     });
   };
 
@@ -140,50 +109,18 @@ function ManagerDashboard() {
     setError("");
 
     // Validation
-    if (!formData.title || !formData.description || !formData.deadline) {
+    if (!formData.projectId || !formData.title || !formData.description || !formData.teamMember) {
       setError("Please fill all required fields!");
       return;
     }
 
-    if (selectedTeamMembers.length === 0) {
-      setError("Please select at least one team member!");
-      return;
-    }
-
-    // Fix for deadline validation
-    // Get today's date at the beginning of the day (midnight) to properly compare with selected date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const selectedDate = new Date(formData.deadline);
-    // Set to beginning of the day for accurate comparison
-    selectedDate.setHours(0, 0, 0, 0);
-    
-    if (selectedDate < today) {
-      setError("Deadline must be today or a future date");
-      return;
-    }
-    
-    // Get selected team members details
-    const selectedTeamMembersDetails = teamMembers.filter(member => 
-      selectedTeamMembers.includes(member.id)
-    ).map(member => ({
-      id: member.id,
-      name: member.name,
-      skill: member.skill
-    }));
-
     // Add new project
     const newProject = {
       id: projects.length + 1,
+      projectId: formData.projectId,
       title: formData.title,
       description: formData.description,
-      deadline: formData.deadline,
-      progress: parseInt(formData.progress) || 0,
-      technologies: formData.technologies.split(",").map(t => t.trim()).filter(t => t),
-      priority: getPriorityLabel(parseInt(formData.priority)),
-      priorityValue: parseInt(formData.priority),
-      team: selectedTeamMembersDetails.map(member => member.name),
+      teamMember: formData.teamMember,
       status: "Not Started",
       createdAt: new Date().toISOString()
     };
@@ -191,25 +128,14 @@ function ManagerDashboard() {
     setProjects([...projects, newProject]);
     setShowForm(false);
     setFormData({
+      projectId: "",
       title: "",
       description: "",
-      deadline: "",
-      technologies: "",
-      priority: "5",
-      teamMembers: [],
-      progress: "0"
+      teamMember: ""
     });
-    setSelectedTeamMembers([]);
   };
 
   // Helper function to convert numeric priority to label
-  const getPriorityLabel = (priorityValue) => {
-    if (priorityValue >= 8) return "Critical";
-    if (priorityValue >= 5) return "High";
-    if (priorityValue >= 3) return "Medium";
-    return "Low";
-  };
-
   return (
     <div className="dashboard-container">
       <div className="sidebar">
@@ -310,6 +236,16 @@ function ManagerDashboard() {
                   {error && <div className="error-message" style={{ color: '#dc2626', padding: '10px', backgroundColor: '#fee2e2', borderRadius: '4px', marginBottom: '15px' }}>{error}</div>}
                   <form onSubmit={handleSubmit}>
                     <div className="form-group">
+                      <label>Project ID*</label>
+                      <input
+                        type="text"
+                        name="projectId"
+                        value={formData.projectId}
+                        onChange={handleInputChange}
+                        placeholder="Enter project ID"
+                      />
+                    </div>
+                    <div className="form-group">
                       <label>Project Title*</label>
                       <input
                         type="text"
@@ -329,90 +265,21 @@ function ManagerDashboard() {
                         placeholder="Enter project description"
                       ></textarea>
                     </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Deadline*</label>
-                        <input
-                          type="date"
-                          name="deadline"
-                          value={formData.deadline}
-                          onChange={handleInputChange}
-                          min={new Date().toISOString().split("T")[0]}
-                        />
-                      </div>
-                    </div>
                     <div className="form-group">
-                      <label>Technologies Required (comma-separated)*</label>
-                      <input
-                        type="text"
-                        name="technologies"
-                        value={formData.technologies}
+                      <label>Team Member*</label>
+                      <select
+                        name="teamMember"
+                        value={formData.teamMember}
                         onChange={handleInputChange}
-                        placeholder="React, Node.js, MongoDB, etc."
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Priority (1-10)*: {formData.priority}</label>
-                      <input
-                        type="range"
-                        name="priority"
-                        min="1"
-                        max="10"
-                        value={formData.priority}
-                        onChange={handleInputChange}
-                        className="priority-slider"
-                      />
-                      <div className="priority-labels">
-                        <span>Low</span>
-                        <span>Medium</span>
-                        <span>High</span>
-                        <span>Critical</span>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label>Initial Progress (%)</label>
-                      <input
-                        type="number"
-                        name="progress"
-                        min="0"
-                        max="100"
-                        value={formData.progress}
-                        onChange={handleInputChange}
-                        placeholder="0-100"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Select Team Members*</label>
-                      <div className="team-member-selection" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '4px', padding: '10px' }}>
+                        required
+                      >
+                        <option value="">-- Select Team Member --</option>
                         {teamMembers.map(member => (
-                          <div 
-                            key={member.id} 
-                            className={`team-member-option ${selectedTeamMembers.includes(member.id) ? 'selected' : ''}`}
-                            onClick={() => handleTeamMemberToggle(member.id)}
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              padding: '8px', 
-                              margin: '5px 0', 
-                              borderRadius: '4px', 
-                              cursor: 'pointer',
-                              backgroundColor: selectedTeamMembers.includes(member.id) ? '#e0f2fe' : 'white',
-                              border: selectedTeamMembers.includes(member.id) ? '1px solid #bae6fd' : '1px solid #e5e7eb'
-                            }}
-                          >
-                            <div className="member-avatar" style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px' }}>
-                              {member.name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                            <div className="member-details" style={{ flex: '1' }}>
-                              <span className="member-name" style={{ display: 'block', fontWeight: '500' }}>{member.name}</span>
-                              <span className="member-skill" style={{ display: 'block', fontSize: '0.875rem', color: '#6b7280' }}>{member.skill}</span>
-                            </div>
-                            <div className="member-checkbox" style={{ width: '24px', height: '24px', borderRadius: '4px', border: selectedTeamMembers.includes(member.id) ? 'none' : '1px solid #d1d5db', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedTeamMembers.includes(member.id) ? '#2563eb' : 'transparent' }}>
-                              {selectedTeamMembers.includes(member.id) && <span style={{ color: 'white' }}>✓</span>}
-                            </div>
-                          </div>
+                          <option key={member.id} value={member.name}>
+                            {member.name}
+                          </option>
                         ))}
-                      </div>
+                      </select>
                     </div>
                     <button type="submit" className="submit-button" style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '4px', border: 'none', cursor: 'pointer', marginTop: '15px', fontWeight: '500' }}>Create Project</button>
                   </form>
