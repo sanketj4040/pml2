@@ -3,13 +3,19 @@ import { useNavigate } from "react-router-dom";
 
 function ManagerDashboard() {
   const [projects, setProjects] = useState([]);
-  const [tasks, setTasks] = useState([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showForm, setShowForm] = useState(false);
   const [managers, setManagers] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
   const [error, setError] = useState("");
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskFormData, setTaskFormData] = useState({
+    taskId: "",
+    teamMemberId: "",
+    taskName: "",
+    managerId: ""
+  });
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -48,42 +54,6 @@ function ManagerDashboard() {
       }
     ];
     
-    // Sample tasks data
-    const sampleTasks = [
-      {
-        id: 1,
-        projectId: 1,
-        title: "Design Homepage Mockup",
-        assignedTo: "John",
-        status: "In Progress",
-        dueDate: "2025-09-20"
-      },
-      {
-        id: 2,
-        projectId: 1,
-        title: "Create CSS Framework",
-        assignedTo: "Sarah",
-        status: "Pending",
-        dueDate: "2025-09-25"
-      },
-      {
-        id: 3,
-        projectId: 2,
-        title: "Design App Wireframes",
-        assignedTo: "Mike",
-        status: "Completed",
-        dueDate: "2025-09-15"
-      },
-      {
-        id: 4,
-        projectId: 2,
-        title: "Frontend Development",
-        assignedTo: "Lisa",
-        status: "In Progress",
-        dueDate: "2025-10-10"
-      }
-    ];
-    
     // Sample team members data
     const sampleTeamMembers = [
       { id: 1, name: "John Smith", skill: "Frontend Developer" },
@@ -97,7 +67,6 @@ function ManagerDashboard() {
     ];
     
     setProjects(sampleProjects);
-    setTasks(sampleTasks);
     setTeamMembers(sampleTeamMembers);
   }, [navigate]);
 
@@ -134,10 +103,36 @@ function ManagerDashboard() {
     navigate("/manager");
   };
 
-  const updateTaskStatus = (taskId, newStatus) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ));
+  const handleTaskInputChange = (e) => {
+    const { name, value } = e.target;
+    setTaskFormData({
+      ...taskFormData,
+      [name]: value
+    });
+  };
+
+  const handleTaskSubmit = (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!taskFormData.taskId || !taskFormData.teamMemberId || !taskFormData.taskName || !taskFormData.managerId) {
+      alert("Please fill all required fields!");
+      return;
+    }
+
+    // Here you would typically save the task assignment
+    console.log("Task assigned:", taskFormData);
+    
+    // Reset form
+    setTaskFormData({
+      taskId: "",
+      teamMemberId: "",
+      taskName: "",
+      managerId: ""
+    });
+    
+    setShowTaskForm(false);
+    alert("Task assigned successfully!");
   };
   
   const handleSubmit = (e) => {
@@ -287,17 +282,6 @@ function ManagerDashboard() {
           <div className="dashboard-content">
             <h3>Welcome to the Manager Dashboard</h3>
             <p>This is your central command center for managing projects and team members.</p>
-            
-            <div className="quick-actions">
-              <div className="action-section">
-                <h4>Quick Actions</h4>
-                <div className="action-buttons">
-                  <button className="action-btn">Assign Tasks</button>
-                  <button className="action-btn">View Team Performance</button>
-                  <button className="action-btn">Generate Reports</button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -305,10 +289,6 @@ function ManagerDashboard() {
           <div className="dashboard-content">
             <div className="section-header">
               <h3>Projects Management</h3>
-              <div className="stat-badge">
-                <span>Total Projects:</span>
-                <span className="stat-value">{projects.length}</span>
-              </div>
             </div>
             
             <div className="project-management">
@@ -322,7 +302,6 @@ function ManagerDashboard() {
                   {showForm ? '✖ Cancel' : '+ New Project'}
                 </button>
                 <button className="action-btn">View All Projects</button>
-                <button className="action-btn">Project Analytics</button>
               </div>
               
               {showForm && (
@@ -447,26 +426,88 @@ function ManagerDashboard() {
           <div className="dashboard-content">
             <div className="section-header">
               <h3>Task Assignment</h3>
-              <div className="stat-badges">
-                <div className="stat-badge">
-                  <span>Total Tasks:</span>
-                  <span className="stat-value">{tasks.length}</span>
-                </div>
-                <div className="stat-badge">
-                  <span>Completed:</span>
-                  <span className="stat-value">{tasks.filter(task => task.status === "Completed").length}</span>
-                </div>
-              </div>
             </div>
             
             <div className="task-management">
-              <p>Assign, monitor, and update tasks for your team members.</p>
+              <p>Assign tasks to your team members.</p>
               
               <div className="action-buttons task-actions">
-                <button className="action-btn primary">+ New Task</button>
-                <button className="action-btn">View All Tasks</button>
-                <button className="action-btn">Task Statistics</button>
+                <button 
+                  className={`action-btn primary ${showTaskForm ? 'cancel' : ''}`}
+                  onClick={() => setShowTaskForm(!showTaskForm)}
+                >
+                  {showTaskForm ? '✖ Cancel' : '+ Assign Task'}
+                </button>
               </div>
+
+              {showTaskForm && (
+                <div className="form-container" style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                  <h3>Assign New Task</h3>
+                  
+                  <form onSubmit={handleTaskSubmit} className="registration-form">
+                    <div className="form-group">
+                      <label htmlFor="taskId">Task ID*</label>
+                      <input
+                        type="text"
+                        id="taskId"
+                        name="taskId"
+                        value={taskFormData.taskId}
+                        onChange={handleTaskInputChange}
+                        placeholder="Enter task ID"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="teamMemberId">Team Member ID*</label>
+                      <select
+                        id="teamMemberId"
+                        name="teamMemberId"
+                        value={taskFormData.teamMemberId}
+                        onChange={handleTaskInputChange}
+                        required
+                      >
+                        <option value="">-- Select Team Member --</option>
+                        {teamMembers.map(member => (
+                          <option key={member.id} value={member.id}>
+                            {member.id} - {member.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="taskName">Task Name*</label>
+                      <input
+                        type="text"
+                        id="taskName"
+                        name="taskName"
+                        value={taskFormData.taskName}
+                        onChange={handleTaskInputChange}
+                        placeholder="Enter task name"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="managerId">Manager ID*</label>
+                      <input
+                        type="text"
+                        id="managerId"
+                        name="managerId"
+                        value={taskFormData.managerId}
+                        onChange={handleTaskInputChange}
+                        placeholder="Enter manager ID"
+                        required
+                      />
+                    </div>
+
+                    <button type="submit" className="submit-button" style={{ backgroundColor: '#2563eb', color: 'white', padding: '10px 20px', borderRadius: '4px', border: 'none', cursor: 'pointer', marginTop: '15px', fontWeight: '500' }}>
+                      Assign Task
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -475,19 +516,13 @@ function ManagerDashboard() {
           <div className="dashboard-content">
             <div className="section-header">
               <h3>Team Management</h3>
-              <div className="stat-badge">
-                <span>Team Members:</span>
-                <span className="stat-value">{[...new Set(projects.flatMap(p => p.team))].length}</span>
-              </div>
             </div>
             
             <div className="team-management">
               <p>Manage your team, assign roles, and monitor individual performance.</p>
               
               <div className="action-buttons team-actions">
-                <button className="action-btn primary">+ Add Team Member</button>
                 <button className="action-btn">View Team</button>
-                <button className="action-btn">Performance Reviews</button>
               </div>
             </div>
           </div>
@@ -501,16 +536,10 @@ function ManagerDashboard() {
             <div className="profile-section">
               <div className="profile-info">
                 <h4>Personal Information</h4>
-                <p>Name: John Manager</p>
-                <p>Email: john.manager@example.com</p>
-                <p>Department: Development</p>
-                <p>Role: Senior Project Manager</p>
-              </div>
-              
-              <div className="action-buttons profile-actions">
-                <button className="action-btn primary">Edit Profile</button>
-                <button className="action-btn">Change Password</button>
-                <button className="action-btn">Notification Settings</button>
+                <p>Name: </p>
+                <p>Email: </p>
+                {/* <p>Department: </p>
+                <p>Role: </p> */}
               </div>
             </div>
           </div>
