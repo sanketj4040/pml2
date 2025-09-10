@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { createSupportRequest } from "../services/supportService";
+import { apiSupportService } from "../services/apiService";
 
 function Help() {
   // Form state
@@ -86,8 +86,15 @@ function Help() {
       setIsSubmitting(true);
       
       try {
-        // Call the service function to create a support request
-        await createSupportRequest(formData);
+        // Create help request data with an auto-incremented help_id
+        // The backend will handle generating the ID
+        const helpData = {
+          ...formData,
+          number: formData.mobile // Map mobile to number as expected by the API
+        };
+        
+        // Call the real API service function to create a help request
+        await apiSupportService.createSupportRequest(helpData);
         
         // Show success message
         setSuccessMessage("Your support request has been submitted successfully!");
