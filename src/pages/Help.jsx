@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { apiSupportService } from "../services/apiService";
+import { createSupportRequest } from "../services/supportService";
 
 function Help() {
   // Form state
@@ -87,6 +87,7 @@ function Help() {
       setIsSubmitting(true);
       
       try {
+<<<<<<< HEAD
         // Create help request data matching exactly what the backend expects
         const helpData = {
           name: formData.name,
@@ -97,6 +98,10 @@ function Help() {
         };
         
         console.log("Submitting help request:", helpData);
+=======
+        // Call the service function to create a support request
+        await createSupportRequest(formData);
+>>>>>>> 231d3bf9f8a0fbea0d101adac228ce30e90a073d
         
         // First try the test API to check if the backend is working
         const testResponse = await fetch('http://localhost:8000/api/help/test-create/');
