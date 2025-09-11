@@ -74,7 +74,7 @@ export const apiSupportService = {
   // Get all help requests
   getAllSupportRequests: async () => {
     try {
-      const response = await apiClient.get('/help/');
+      const response = await apiClient.get('/api/help/');
       return response.data;
     } catch (error) {
       console.error('Error fetching help requests:', error);
@@ -85,7 +85,7 @@ export const apiSupportService = {
   // Get a single help request by ID
   getSupportRequestById: async (id) => {
     try {
-      const response = await apiClient.get(`/help/${id}/`);
+      const response = await apiClient.get(`/api/help/${id}/`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching help request with id ${id}:`, error);
@@ -96,10 +96,35 @@ export const apiSupportService = {
   // Create a new help request
   createSupportRequest: async (requestData) => {
     try {
-      const response = await apiClient.post('/help/create/', requestData);
-      return response.data;
+      console.log('Sending help request data:', requestData);
+      
+      // Ensure all required fields are provided and not empty
+      if (!requestData.name || !requestData.email || !requestData.number || !requestData.subject) {
+        console.error('Missing required fields in request data');
+        throw new Error('Missing required fields');
+      }
+      
+      // Use fetch directly instead of axios for debugging
+      const response = await fetch('http://localhost:8000/api/help/create/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error response (${response.status}):`, errorText);
+        throw new Error(`Server responded with status ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Help request created successfully:', data);
+      return data;
     } catch (error) {
       console.error('Error creating help request:', error);
+      console.error('Error details:', error.response ? error.response.data : error.message);
       throw error;
     }
   },
@@ -107,7 +132,7 @@ export const apiSupportService = {
   // Update a help request
   updateSupportRequest: async (id, updates) => {
     try {
-      const response = await apiClient.put(`/help/update/${id}/`, updates);
+      const response = await apiClient.put(`/api/help/update/${id}/`, updates);
       return response.data;
     } catch (error) {
       console.error(`Error updating help request with id ${id}:`, error);
@@ -118,7 +143,7 @@ export const apiSupportService = {
   // Delete a help request
   deleteSupportRequest: async (id) => {
     try {
-      await apiClient.delete(`/help/delete/${id}/`);
+      await apiClient.delete(`/api/help/delete/${id}/`);
       return { success: true };
     } catch (error) {
       console.error(`Error deleting help request with id ${id}:`, error);

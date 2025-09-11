@@ -1,164 +1,117 @@
-// This file contains functions to interact with the backend API for support requests
-// In a real application, these functions would make actual API calls to your backend server
-// Mock database for demonstration purposes
-let supportRequests = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    mobile: "1234567890",
-    subject: "Login Issue",
-    description: "I'm unable to login to my account after the recent update.",
-    status: "pending",
-    createdAt: "2023-09-01T14:30:00Z"
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    mobile: "9876543210",
-    subject: "Feature Request",
-    description: "Can you add a dark mode to the application?",
-    status: "resolved",
-    createdAt: "2023-08-28T09:15:00Z"
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob.johnson@example.com",
-    mobile: "5551234567",
-    subject: "Report Generation Error",
-    description: "I'm getting an error when trying to generate the monthly report.",
-    status: "in-progress",
-    createdAt: "2023-09-02T11:45:00Z"
-  }
-];
+﻿// This file contains functions to interact with the backend API for help requests
+import axios from 'axios';
 
-// Get all support requests
+// API base URL - adjust this to match your Django backend URL
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+// Get all help requests from the Django API
 export const getAllSupportRequests = async () => {
-  // Simulate API delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([...supportRequests]);
-    }, 500);
-  });
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/help/`);
+    
+    // Transform the response data to match the expected format
+    return response.data.map(help => ({
+      id: help.help_id,
+      name: help.name,
+      email: help.email,
+      mobile: help.number,
+      subject: help.subject,
+      description: help.description,
+      createdAt: help.created_at || new Date().toISOString() // Use current date if not available
+    }));
+  } catch (error) {
+    console.error('Error fetching help data:', error);
+    throw error;
+  }
 };
 
-// Get a single support request by ID
+// Get a single help request by ID
 export const getSupportRequestById = async (id) => {
-  // Simulate API delay
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const request = supportRequests.find(req => req.id === id);
-      if (request) {
-        resolve({ ...request });
-      } else {
-        reject(new Error('Support request not found'));
-      }
-    }, 500);
-  });
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/help/${id}/`);
+    
+    // Transform the response data to match the expected format
+    return {
+      id: response.data.help_id,
+      name: response.data.name,
+      email: response.data.email,
+      mobile: response.data.number,
+      subject: response.data.subject,
+      description: response.data.description,
+      createdAt: response.data.created_at || new Date().toISOString() // Use current date if not available
+    };
+  } catch (error) {
+    console.error(`Error fetching help request with ID ${id}:`, error);
+    throw error;
+  }
 };
 
-// Create a new support request
+// Create a new help request
 export const createSupportRequest = async (requestData) => {
-  // Simulate API delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newRequest = {
-        id: supportRequests.length + 1,
-        ...requestData,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      
-      supportRequests = [...supportRequests, newRequest];
-      resolve(newRequest);
-    }, 500);
-  });
+  try {
+    // Transform data to match Django API expectations
+    const apiData = {
+      name: requestData.name,
+      email: requestData.email,
+      number: requestData.mobile,
+      subject: requestData.subject,
+      description: requestData.description
+    };
+    
+    const response = await axios.post(`${API_BASE_URL}/api/help/create/`, apiData);
+    
+    // Return transformed data
+    return {
+      id: response.data.help_id,
+      name: response.data.name,
+      email: response.data.email,
+      mobile: response.data.number,
+      subject: response.data.subject,
+      description: response.data.description,
+      createdAt: response.data.created_at || new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error creating help request:', error);
+    throw error;
+  }
 };
 
-// Update a support request
+// Update a help request
 export const updateSupportRequest = async (id, updates) => {
-  // Simulate API delay
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = supportRequests.findIndex(req => req.id === id);
-      
-      if (index !== -1) {
-        const updatedRequest = {
-          ...supportRequests[index],
-          ...updates
-        };
-        
-        supportRequests = [
-          ...supportRequests.slice(0, index),
-          updatedRequest,
-          ...supportRequests.slice(index + 1)
-        ];
-        
-        resolve(updatedRequest);
-      } else {
-        reject(new Error('Support request not found'));
-      }
-    }, 500);
-  });
+  try {
+    // Transform updates to match Django API expectations
+    const apiUpdates = {};
+    if (updates.name) apiUpdates.name = updates.name;
+    if (updates.email) apiUpdates.email = updates.email;
+    if (updates.mobile) apiUpdates.number = updates.mobile;
+    if (updates.subject) apiUpdates.subject = updates.subject;
+    if (updates.description) apiUpdates.description = updates.description;
+    
+    const response = await axios.put(`${API_BASE_URL}/api/help/update/${id}/`, apiUpdates);
+    
+    // Return transformed data
+    return {
+      id: response.data.help_id,
+      name: response.data.name,
+      email: response.data.email,
+      mobile: response.data.number,
+      subject: response.data.subject,
+      description: response.data.description,
+      createdAt: response.data.created_at || new Date().toISOString()
+    };
+  } catch (error) {
+    console.error(`Error updating help request with ID ${id}:`, error);
+    throw error;
+  }
 };
 
-// Delete a support request
+// Delete a help request
 export const deleteSupportRequest = async (id) => {
-  // Simulate API delay
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = supportRequests.findIndex(req => req.id === id);
-      
-      if (index !== -1) {
-        supportRequests = [
-          ...supportRequests.slice(0, index),
-          ...supportRequests.slice(index + 1)
-        ];
-        
-        resolve({ success: true });
-      } else {
-        reject(new Error('Support request not found'));
-      }
-    }, 500);
-  });
-};
-
-// In a real application, these functions would use fetch or axios to make HTTP requests to your backend
-// Example using fetch:
-/*
-export const getAllSupportRequests = async () => {
   try {
-    const response = await fetch('/api/support-requests');
-    if (!response.ok) {
-      throw new Error('Failed to fetch support requests');
-    }
-    return await response.json();
+    await axios.delete(`${API_BASE_URL}/api/help/delete/${id}/`);
+    return { success: true };
   } catch (error) {
-    console.error('Error fetching support requests:', error);
+    console.error(`Error deleting help request with ID ${id}:`, error);
     throw error;
   }
 };
-
-export const createSupportRequest = async (requestData) => {
-  try {
-    const response = await fetch('/api/support-requests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to create support request');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error creating support request:', error);
-    throw error;
-  }
-};
-*/

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAllSupportRequests } from "../services/supportService";
 
 function AdminDashboard() {
   const [projects, setProjects] = useState([]);
@@ -24,7 +25,24 @@ function AdminDashboard() {
   const [error, setError] = useState("");
   // Help section data
   const [helpData, setHelpData] = useState([]);
+  const [helpLoading, setHelpLoading] = useState(false);
+  const [helpError, setHelpError] = useState("");
   const navigate = useNavigate();
+
+  // Function to fetch help data
+  const fetchHelpData = async () => {
+    try {
+      setHelpLoading(true);
+      setHelpError("");
+      const data = await getAllSupportRequests();
+      setHelpData(data);
+    } catch (error) {
+      console.error("Error fetching help data:", error);
+      setHelpError("Failed to load help requests");
+    } finally {
+      setHelpLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Check if admin is logged in
@@ -37,7 +55,9 @@ function AdminDashboard() {
     setManagers([]);
     setTeamMembers([]);
     setProjects([]);
-    setHelpData([]);
+    
+    // Fetch help data from API
+    fetchHelpData();
     
   }, [navigate]);
 
@@ -434,28 +454,77 @@ function AdminDashboard() {
           {activeTab === "help" && (
             <div className="content-section">
               <h3 className="text-2xl font-bold mb-4 text-blue-700">Help Requests</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-200">
-                  <thead className="bg-blue-100">
-                    <tr>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700">Date</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700">Subject</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
-                      <th className="py-3 px-4 text-left font-semibold text-gray-700">User</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {helpData.map((item) => (
-                      <tr key={item.id} className="hover:bg-blue-50 transition">
-                        <td className="py-2 px-4 border-b border-gray-100">{item.date}</td>
-                        <td className="py-2 px-4 border-b border-gray-100">{item.subject}</td>
-                        <td className={`py-2 px-4 border-b border-gray-100 font-semibold ${item.status === 'Resolved' ? 'text-green-600' : item.status === 'Pending' ? 'text-yellow-600' : item.status === 'In Progress' ? 'text-blue-600' : 'text-gray-600'}`}>{item.status}</td>
-                        <td className="py-2 px-4 border-b border-gray-100">{item.user}</td>
+              
+              {helpLoading ? (
+                <div className="text-center py-8">
+                  <p>Loading help requests...</p>
+                </div>
+              ) : helpError ? (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  {helpError}
+                  <button 
+                    onClick={fetchHelpData}
+                    className="ml-2 underline hover:no-underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : helpData.length === 0 ? (
+                <div className="text-center py-8">
+                  <p>No help requests found.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white rounded-lg shadow-lg border border-gray-200">
+                    <thead className="bg-blue-100">
+                      <tr>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">ID</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Name</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Email</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Mobile</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Subject</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Description</th>
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {helpData.map((item) => (
+                        <tr key={item.id} className="hover:bg-blue-50 transition">
+                          <td className="py-2 px-4 border-b border-gray-100">{item.id}</td>
+                          <td className="py-2 px-4 border-b border-gray-100">{item.name}</td>
+                          <td className="py-2 px-4 border-b border-gray-100">
+                            <a 
+                              href={`mailto:${item.email}`} 
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              {item.email}
+                            </a>
+                          </td>
+                          <td className="py-2 px-4 border-b border-gray-100">
+                            <a 
+                              href={`tel:${item.mobile}`} 
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              {item.mobile}
+                            </a>
+                          </td>
+                          <td className="py-2 px-4 border-b border-gray-100">
+                            {item.subject}
+                          </td>
+                          <td className="py-2 px-4 border-b border-gray-100 max-w-xs">
+                            <div className="truncate" title={item.description}>
+                              {item.description || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="py-2 px-4 border-b border-gray-100">
+                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 

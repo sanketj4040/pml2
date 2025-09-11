@@ -44,36 +44,37 @@ function Help() {
     const newErrors = {};
     
     // Name validation
-    if (!formData.name.trim()) {
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = "Name is required";
     }
     
     // Email validation
-    if (!formData.email.trim()) {
+    if (!formData.email || !formData.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
     
     // Mobile validation
-    if (!formData.mobile.trim()) {
+    if (!formData.mobile || !formData.mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
     } else if (!/^\d{10}$/.test(formData.mobile.replace(/\D/g, ''))) {
       newErrors.mobile = "Mobile number must be 10 digits";
     }
     
     // Subject validation
-    if (!formData.subject.trim()) {
+    if (!formData.subject || !formData.subject.trim()) {
       newErrors.subject = "Subject is required";
     }
     
     // Description validation
-    if (!formData.description.trim()) {
+    if (!formData.description || !formData.description.trim()) {
       newErrors.description = "Description is required";
     } else if (formData.description.trim().length < 10) {
       newErrors.description = "Description must be at least 10 characters";
     }
     
+    console.log("Form validation errors:", newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,36 +87,62 @@ function Help() {
       setIsSubmitting(true);
       
       try {
-        // Create help request data with an auto-incremented help_id
-        // The backend will handle generating the ID
+        // Create help request data matching exactly what the backend expects
         const helpData = {
-          ...formData,
-          number: formData.mobile // Map mobile to number as expected by the API
+          name: formData.name,
+          email: formData.email,
+          number: formData.mobile,  // Mobile from form needs to be mapped to number in DB
+          subject: formData.subject,
+          description: formData.description
         };
         
-        // Call the real API service function to create a help request
-        await apiSupportService.createSupportRequest(helpData);
+        console.log("Submitting help request:", helpData);
         
-        // Show success message
-        setSuccessMessage("Your support request has been submitted successfully!");
+        // First try the test API to check if the backend is working
+        const testResponse = await fetch('http://localhost:8000/api/help/test-create/');
+        const testResult = await testResponse.json();
+        console.log("Test API response:", testResult);
         
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          mobile: "",
-          subject: "",
-          description: ""
-        });
-        
-        // Clear success message after 5 seconds
-        setTimeout(() => {
-          setSuccessMessage("");
-        }, 5000);
+        // If test was successful, now try the actual form submission
+        if (testResponse.ok) {
+          // Call the real API service function to create a help request
+          await apiSupportService.createSupportRequest(helpData);
+          
+          // Show success message
+          setSuccessMessage("Your support request has been submitted successfully!");
+          
+          // Reset form
+          setFormData({
+            name: "",
+            email: "",
+            mobile: "",
+            subject: "",
+            description: ""
+          });
+          
+          // Clear success message after 5 seconds
+          setTimeout(() => {
+            setSuccessMessage("");
+          }, 5000);
+        } else {
+          throw new Error(`Test API failed: ${testResult.message || 'Unknown error'}`);
+        }
       } catch (error) {
         console.error("Error submitting support request:", error);
+        let errorMessage = "Failed to submit support request. Please try again.";
+        
+        // Get detailed error message if available
+        if (error.response && error.response.data) {
+          console.log("Server error details:", error.response.data);
+          if (typeof error.response.data === 'object') {
+            errorMessage = Object.keys(error.response.data)
+              .map(key => `${key}: ${error.response.data[key]}`)
+              .join(', ');
+          }
+        }
+        
         setErrors({ 
-          submit: "Failed to submit support request. Please try again." 
+          submit: `${errorMessage} (${error.message})` 
         });
       } finally {
         setIsSubmitting(false);
